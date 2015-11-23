@@ -32,9 +32,10 @@ class Memory():
             self.mem[i] = ID 
         self.head = last + size 
 
-    def __allocate_firstfit(self, size, ID, startlocation = 0):
+    def __allocate_firstfit(self, size, ID, startlocation = 0, endlocation = -1):
         last = -1 
-        for i in range(startlocation, self.cap): 
+        if endlocation == -1: endlocation = self.cap
+        for i in range(startlocation, endlocation): 
             if self.mem[i] == '.':
                 if last == -1:
                     last = i 
@@ -46,7 +47,11 @@ class Memory():
         return False
   
     def __allocate_nextfit(self, size, ID):
-        return self.__allocate_firstfit(size, ID, startlocation = self.head) 
+        print "self.head=", self.head
+        if self.__allocate_firstfit(size, ID, startlocation = self.head) :
+            return True
+        else:
+            return self.__allocate_firstfit(size, ID, endlocation = self.head)
 
     def __allocate_bestfit(self, size, ID):
         count = {}
@@ -65,7 +70,6 @@ class Memory():
         if last != -1: 
             if self.cap - last >= size:
                 count[last] = self.cap - last
-        pdb.set_trace()
         minpair = min(count.iteritems(), key=operator.itemgetter(1))
         if minpair[1] >= size:
             self.__allocate_put(minpair[0], size, ID)
@@ -88,34 +92,13 @@ class Memory():
    
     def defragment(self):
         newi = 0
+        count = 0
         for i in range(self.cap):
             if self.mem[i] != '.': 
                 tmp = self.mem[i]
                 self.mem[i] = '.'
                 self.mem[newi] = tmp 
+                if i != newi: count += 1
                 newi += 1
-
-mem = Memory("bestfit")
-mem.printmem()
-mem.allocate( 192, "A")
-mem.printmem()
-mem.allocate( 32, "B")
-mem.printmem()
-mem.deallocate("A")
-mem.printmem()
-mem.allocate( 32, "C")
-mem.printmem()
-mem.allocate( 16, "E")
-mem.printmem()
-mem.allocate( 16, "F")
-mem.printmem()
-mem.defragment()
-mem.printmem()
-mem.deallocate( "E")
-mem.printmem()
-mem.deallocate( "C")
-mem.printmem()
-mem.allocate( 33, "G")
-mem.printmem()
-mem.defragment()
-mem.printmem()
+        print count, "memory moved"
+        return count 

@@ -17,6 +17,8 @@ from simulator import Simulator
 
 class CPU():
     t_cs = 13 # in ms
+    t_slice = 80 # in ms
+    t_memmove = 10 # in ms
     p_list = []
  
     def __init__(self, queuetype, t_cs_val = 13):
@@ -53,22 +55,24 @@ class CPU():
     def run(self):
         s = Simulator(self.maxID)
         for p in self.p_list:
-            #p.printProcess()
-	    p.setInQueueTime(0)
-            self.process_queue.appendProcess(p.burst_time, p)
-	    if self.queueType == "PWA":
-	        p.currentAgingSeq = random.getrandbits(128)
-	        s.schedule( 0 + 3 * p.burst_time, self.eAging, p, p.currentAgingSeq , s) 
+            ##p.printProcess()
+	    #p.setInQueueTime(0)
+            #self.process_queue.appendProcess(p.burst_time, p)
+	    #if self.queueType == "PWA":
+	    #    p.currentAgingSeq = random.getrandbits(128)
+	    #    s.schedule( 0 + 3 * p.burst_time, self.eAging, p, p.currentAgingSeq , s) 
+            s.schedule( p.arrival_time, self.eIOBurst, p, s) 
 
-        print "time 0ms: Simulator started for %s [Q" % self.queueType,
-        sys.stdout.write('') 
-        self.printQueue()
-        print "]"
-        next_burst_time, next_process = self.process_queue.nextProcess()
-	self.waitTimeSum += next_process.setOutQueueTime(0)
-	self.waitTimeNum += 1
+        #print "time 0ms: Simulator started for %s [Q" % self.queueType,
+        #sys.stdout.write('') 
+        #self.printQueue()
+        #print "]"
+        #next_burst_time, next_process = self.process_queue.nextProcess()
+	#self.waitTimeSum += next_process.setOutQueueTime(0)
+	#self.waitTimeNum += 1
 
-        s.schedule(self.t_cs, self.eContentSwitch, next_process, next_burst_time, s)  
+        #s.schedule(self.t_cs, self.eContentSwitch, next_process, next_burst_time, s)  
+
         s.run()    
       
     #event occurs when it's done 
@@ -124,6 +128,9 @@ class CPU():
     def eIOBurst(self, process, simulator):
         if process.num_burst == 0:
             return
+
+        if process.total_num_burst == process.num_burst:
+            print "Added", process.ID
 
         process.resetRemainBurstTime()
  

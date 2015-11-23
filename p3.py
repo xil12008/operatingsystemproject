@@ -2,6 +2,7 @@ import heapq
 from collections import deque
 import pdb
 import sys
+import string
 import Queue as Q
 import logging
 logging.basicConfig(stream=sys.stderr, level=logging.CRITICAL)
@@ -27,22 +28,24 @@ if(__name__=="__main__"):
     for line in f:
          if(line.strip() and line[0]=='#'):
              continue 
-         segments = line.split('|')
-         if(len(segments)!=5):
+         segments = line.strip().split('|')
+         if(len(segments)!=6):
              #print "Wrong Input Line:", line 
              continue
          else:
-             processList.append((int(segments[0]),\
+             processList.append((int(ord(segments[0])-64),\
                                  int(segments[1]),\
                                  int(segments[2]),\
                                  int(segments[3]),\
-				 int(segments[4])))
+                                 int(segments[4]),\
+				 int(segments[5])))
 
-    queueTypeList = ['FCFS', 'SRT', 'PWA']
+    #queueTypeList = ['FCFS', 'SRT', 'PWA']
+    queueTypeList = ['SRT']
   
     burst_num = 0
     for ptuple in processList:
-        burst_num += ptuple[2]
+        burst_num += ptuple[3]
 
     outfile = open("simout.txt", "w")
     for qtype in queueTypeList: 

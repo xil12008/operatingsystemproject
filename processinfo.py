@@ -18,15 +18,28 @@ class ProcessInfo():
     io_time = None 
     priority = None   
  
-    def __init__(self, ID_val, burst_time_val, num_burst_val, io_time_val, priority_val):
-       self.ID = ID_val 
+    #def __init__(self, ID_val, burst_time_val, num_burst_val, io_time_val, priority_val):
+    #   self.ID = ID_val 
+    #   self.burst_time = burst_time_val 
+    #   self.num_burst = num_burst_val 
+    #   self.io_time = io_time_val 
+    #   self.lastTimeInCPU = None 
+    #   self.lastTimeInQueue = None 
+    #   self.remain_burst_time = burst_time_val
+    #   self.priority = priority_val
+
+    def __init__(self, ID_val, arrival_time, burst_time_val, num_burst_val, io_time_val, memory_size):
+       print ID_val, arrival_time, burst_time_val, num_burst_val, io_time_val, memory_size 
+       self.ID = ID_val
+       self.arrival_time = arrival_time
        self.burst_time = burst_time_val 
        self.num_burst = num_burst_val 
        self.io_time = io_time_val 
+       self.memory_size = memory_size
        self.lastTimeInCPU = None 
        self.lastTimeInQueue = None 
        self.remain_burst_time = burst_time_val
-       self.priority = priority_val
+       self.total_num_burst = num_burst_val
 
     def resetRemainBurstTime(self):
         self.remain_burst_time = self.burst_time
