@@ -45,7 +45,8 @@ if(__name__=="__main__"):
                                 )
 
     #queueTypeList = ['FCFS', 'SRT', 'PWA']
-    queueTypeList = ['SRT']
+    #queueTypeList = ['SRT']
+    queueTypeList = ['RR']
     memTypeList = ['nextfit', 'bestfit', 'firstfit']
   
     burst_num = 0
@@ -55,6 +56,9 @@ if(__name__=="__main__"):
     outfile = open("simout.txt", "w")
     for qtype in queueTypeList: 
         for mtype in memTypeList:
+            print "time 0ms: Simulator started for RR (t_slice 80) and ",
+            sys.stdout.write(mtype[:-3].capitalize()+"-"+mtype[-3:].capitalize())
+            print ""
             cpu = CPU(queuetype=qtype, memtype = mtype)
             for ptuple in processList:
                 cpu.addProcess(ProcessInfo(*ptuple)) 

@@ -29,6 +29,9 @@ class FCFSQueue(ProcessQueue):
     def appendProcess(self, burst_time, p):
         self.process_queue.append((burst_time, p))
 
+    def preempt2queue(self, kickoffProcess_burst_time, kickoffProcess):
+        self.process_queue.append((kickoffProcess_burst_time, kickoffProcess))
+
     def nextProcess(self):
         burst_time, p = self.process_queue.popleft()
         return burst_time, p

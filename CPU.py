@@ -94,7 +94,7 @@ class CPU():
         process.setInCPUTime(simulator.time)
         if self.queueType == "RR" :
             simulator.schedule(simulator.time + burst_time, self.eCPUBurst, process, simulator) 
-            if burst_time > t_slice:
+            if burst_time > self.t_slice:
                 simulator.schedule(simulator.time + self.t_slice, self.eRRPreempt, process, simulator) 
         else:
             simulator.schedule(simulator.time + burst_time, self.eCPUBurst, process, simulator) 
@@ -276,14 +276,36 @@ class CPU():
         simulator.schedule(simulator.time + self.t_cs, self.eContentSwitch, next_process, next_burst_time, simulator) 
         self.CPUIdle = False
 
-    def RRPreempt(self, process, simulator): 
-        pass
+    def eRRPreempt(self, process, simulator): 
+
+        #Preempt. 
+        self.burstTimeSum += self.processInCPU.setOutCPUTime(simulator.time)
+        logging.info("***Test: Remaining Time of P%d: %d while burst time of P%d:%d "%( self.processInCPU.ID, self.processInCPU.remain_burst_time, process.ID, process.burst_time))
+        #Kick off the process in CPU and insert into queue
+        #pdb.set_trace()
+        if self.processInCPU.remain_burst_time <= 0: raise Exception("Bug: Kicked off at the moment of CPU Burst")
+        #cancel the CPU burst of this process:
+        simulator.cancel(self.processInCPU.remain_burst_time + simulator.time, self.processInCPU.ID)
+	self.processInCPU.setInQueueTime(simulator.time)
+        self.process_queue.preempt2queue(self.processInCPU.remain_burst_time, self.processInCPU) 
+
+        process = self.processInCPU
+        print "time %dms:"%simulator.time, "Process '%c'" % process.letter, " preempted due to time slice expiration [Q",
+        sys.stdout.write('')
+        self.printQueue()
+        print "]"
+
+        self.processInCPU = None
+
+        next_burst_time, next_process = self.process_queue.nextProcess() 
+        simulator.schedule(simulator.time + self.t_cs, self.eContentSwitch, next_process, next_burst_time, simulator) 
+        self.CPUIdle = False
+
 
     """
         SRT Preempt
     """
     def SRTPreempt(self, process, simulator):
-
 
         print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "completed I/O [Q",
         sys.stdout.write('')
