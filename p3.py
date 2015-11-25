@@ -46,12 +46,14 @@ if(__name__=="__main__"):
 
     #queueTypeList = ['FCFS', 'SRT', 'PWA']
     #queueTypeList = ['SRT']
-    queueTypeList = ['RR']
+    queueTypeList = ['SRT', 'RR']
     memTypeList = ['nextfit', 'bestfit', 'firstfit']
   
     burst_num = 0
+    urg_burst_sum = 0 
     for ptuple in processList:
         burst_num += ptuple[3]
+        urg_burst_sum += ptuple[2] * ptuple[3] 
 
     outfile = open("simout.txt", "w")
     for qtype in queueTypeList: 
@@ -65,10 +67,12 @@ if(__name__=="__main__"):
             cpu.run()
 	    print ""
 	    print ""
-            outfile.write("Algorithm %s\n" % qtype)
-            outfile.write("-- average CPU burst time: %.2f ms\n" % (1.0 * cpu.burstTimeSum/burst_num))
-            outfile.write("-- average wait time: %.2f ms\n" %(1.0 * cpu.waitTimeSum/ burst_num)) 
-            outfile.write("-- average turnaround time: %.2f ms\n" % (1.0 * (cpu.burstTimeSum + 13*cpu.contentSwitchSum + cpu.waitTimeSum)/burst_num))
+            outfile.write("Algorithm %s with %s\n" %(qtype, mtype))
+            #outfile.write("-- average CPU burst time: %.2f ms\n" % (1.0 * cpu.burstTimeSum/burst_num))
+            outfile.write("-- average CPU burst time: %.2f ms\n" % (1.0 * urg_burst_sum/burst_num))
+            outfile.write("-- average wait time: %.2f ms\n" %(1.0 * cpu.waitTimeSum/ cpu.waitTimeNum)) 
+            outfile.write("-- average turnaround time: %.2f ms\n" %(1.0 * cpu.waitTimeSum/ cpu.waitTimeNum + urg_burst_sum/burst_num))
+            outfile.write("-- time spent on defragmentation : %.2f  ms %.2f/100\n" %(cpu.defragtime, (100.0 * cpu.defragtime / urg_burst_sum) )) 
             outfile.write("-- total number of context switches: %d\n" % cpu.contentSwitchSum)
     outfile.close()
 

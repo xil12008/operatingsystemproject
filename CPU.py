@@ -47,6 +47,8 @@ class CPU():
         self.waitTimeNum = 0
         self.turnaroundTimeSum = 0
         self.contentSwitchSum = 0
+        self.processInCPU_tobe = None 
+        self.defragtime = 0
         self.p_list = []
 
     def printQueue(self):
@@ -91,6 +93,7 @@ class CPU():
         #logging.info("***Test: the remaining time for P%d: %d" % (process.ID, process.remain_burst_time))
         self.CPUIdle = False
         self.processInCPU = process   # A process AFTER content switching is really treated as a process in the CPU
+        self.processInCPU_tobe = None
         process.setInCPUTime(simulator.time)
         if self.queueType == "RR" :
             simulator.schedule(simulator.time + burst_time, self.eCPUBurst, process, simulator) 
@@ -135,7 +138,8 @@ class CPU():
         self.processInCPU = None #Note: process in cpu is in use of CPU, NOT in content switch
         if(not self.process_queue.isEmpty()):
             next_burst_time, next_process = self.process_queue.nextProcess() 
-	    self.waitTimeSum += next_process.setOutQueueTime(simulator.time)
+            tmp =next_process.setOutQueueTime(simulator.time)
+	    self.waitTimeSum += tmp 
 	    self.waitTimeNum += 1 
 
             simulator.schedule(simulator.time + self.t_cs, self.eContentSwitch, next_process, next_burst_time, simulator) 
@@ -183,6 +187,7 @@ class CPU():
                     print "time %dms:"% simulator.time, "Simulated Memory:"
                     self.mem.printmem()
                     moveunits = self.mem.defragment()
+                    self.defragtime += moveunits * self.t_memmove
                     if self.processInCPU:
 	                simulator.delay(self.processInCPU.remain_burst_time + simulator.time, self.processInCPU.ID, moveunits * self.t_memmove)
                         self.processInCPU.remain_burst_time += moveunits * self.t_memmove
@@ -192,7 +197,10 @@ class CPU():
                     simulator.schedule(simulator.time + moveunits * self.t_memmove
 , self.eDefragDone, process, moveunits, simulator) 
                 else:
-                    print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "added to system [Q",
+                    if self.processInCPU_tobe:
+                        print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "added to system [Q %c" %( self.processInCPU_tobe.letter) ,
+                    else:
+                        print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "added to system [Q",
                     sys.stdout.write('')
                     self.printQueue()
                     print "]"
@@ -211,6 +219,7 @@ class CPU():
             #if process.total_num_burst == process.num_burst and defragFlag:
             #   return
             simulator.schedule(simulator.time + self.t_cs, self.eContentSwitch, next_process, next_burst_time, simulator) 
+            self.processInCPU_tobe = next_process
             self.CPUIdle = False
 
     def eDefragDone(self, process, moveunits, simulator):
@@ -290,7 +299,7 @@ class CPU():
         self.process_queue.preempt2queue(self.processInCPU.remain_burst_time, self.processInCPU) 
 
         process = self.processInCPU
-        print "time %dms:"%simulator.time, "Process '%c'" % process.letter, " preempted due to time slice expiration [Q",
+        print "time %dms:"%simulator.time, "Process '%c'" % process.letter, "preempted due to time slice expiration [Q",
         sys.stdout.write('')
         self.printQueue()
         print "]"
