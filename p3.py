@@ -25,6 +25,7 @@ if(__name__=="__main__"):
     with open(infile) as f:
         f = f.readlines()
     processList = []
+    linecount = 0
     for line in f:
          if(line.strip() and line[0]=='#'):
              continue 
@@ -33,15 +34,19 @@ if(__name__=="__main__"):
              #print "Wrong Input Line:", line 
              continue
          else:
-             processList.append((int(ord(segments[0])-64),\
+             linecount += 1
+             processList.append( (linecount,\
+                                 segments[0],\
                                  int(segments[1]),\
                                  int(segments[2]),\
                                  int(segments[3]),\
                                  int(segments[4]),\
-				 int(segments[5])))
+				 int(segments[5]) )   
+                                )
 
     #queueTypeList = ['FCFS', 'SRT', 'PWA']
     queueTypeList = ['SRT']
+    memTypeList = ['nextfit', 'bestfit', 'firstfit']
   
     burst_num = 0
     for ptuple in processList:
@@ -49,17 +54,18 @@ if(__name__=="__main__"):
 
     outfile = open("simout.txt", "w")
     for qtype in queueTypeList: 
-        cpu = CPU(queuetype=qtype)
-        for ptuple in processList:
-            cpu.addProcess(ProcessInfo(*ptuple)) 
-        cpu.run()
-	print ""
-	print ""
-        outfile.write("Algorithm %s\n" % qtype)
-        outfile.write("-- average CPU burst time: %.2f ms\n" % (1.0 * cpu.burstTimeSum/burst_num))
-        outfile.write("-- average wait time: %.2f ms\n" %(1.0 * cpu.waitTimeSum/ burst_num)) 
-        outfile.write("-- average turnaround time: %.2f ms\n" % (1.0 * (cpu.burstTimeSum + 13*cpu.contentSwitchSum + cpu.waitTimeSum)/burst_num))
-        outfile.write("-- total number of context switches: %d\n" % cpu.contentSwitchSum)
+        for mtype in memTypeList:
+            cpu = CPU(queuetype=qtype, memtype = mtype)
+            for ptuple in processList:
+                cpu.addProcess(ProcessInfo(*ptuple)) 
+            cpu.run()
+	    print ""
+	    print ""
+            outfile.write("Algorithm %s\n" % qtype)
+            outfile.write("-- average CPU burst time: %.2f ms\n" % (1.0 * cpu.burstTimeSum/burst_num))
+            outfile.write("-- average wait time: %.2f ms\n" %(1.0 * cpu.waitTimeSum/ burst_num)) 
+            outfile.write("-- average turnaround time: %.2f ms\n" % (1.0 * (cpu.burstTimeSum + 13*cpu.contentSwitchSum + cpu.waitTimeSum)/burst_num))
+            outfile.write("-- total number of context switches: %d\n" % cpu.contentSwitchSum)
     outfile.close()
 
 

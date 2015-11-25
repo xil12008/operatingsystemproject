@@ -46,6 +46,15 @@ class Simulator(object):
                 self.queue.pop()
                 heapq.heapify(self.queue)
  
+    def delay(self, schedule_time, processID, delay_time):
+        for index, ele in enumerate(self.queue):
+            #ele = [time, True, callback, args] 
+            #args= [process, some other parameters]
+            if ele[0] == schedule_time * self.maxID + (processID - 1) and ele[3][0].ID == processID:
+                print "delay P%d for %d time" %(processID, delay_time)
+                self.queue[index][0] = (schedule_time + delay_time) * self.maxID + (processID - 1) 
+                heapq.heapify(self.queue)
+ 
     def halt(self):
         self.terminated = True
 

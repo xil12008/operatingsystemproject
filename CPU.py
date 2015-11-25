@@ -14,6 +14,7 @@ NOTE: THIS PROGRAM IS DEVELOPED UNDER PYTHON 2.7
 
 from processqueue import ProcessQueue, SRTQueue, FCFSQueue, PWAQueue
 from simulator import Simulator
+from memory import Memory 
 
 class CPU():
     t_cs = 13 # in ms
@@ -21,14 +22,20 @@ class CPU():
     t_memmove = 10 # in ms
     p_list = []
  
-    def __init__(self, queuetype, t_cs_val = 13):
+    def __init__(self, queuetype, memtype, t_cs_val = 13):
         self.t_cs = t_cs_val 
+        self.t_slice = 80 # in ms
+        self.t_memmove = 10 # in ms
         if queuetype == "FCFS":
             self.process_queue = FCFSQueue() 
         elif queuetype == "SRT":
             self.process_queue = SRTQueue() 
         elif queuetype == "PWA":
             self.process_queue = PWAQueue() 
+        elif queuetype == "RR":
+            self.process_queue = FCFSQueue() 
+ 
+        self.mem = Memory(memtype) 
         self.queueType = queuetype
         self.CPUIdle = True
         self.n = 0
@@ -77,7 +84,7 @@ class CPU():
       
     #event occurs when it's done 
     def eContentSwitch(self, process, burst_time, simulator):
-        print "time %dms:" % simulator.time,"P%d"% process.ID, "started using the CPU [Q",
+        print "time %dms:" % simulator.time,"Process '%c'"% process.letter, "started using the CPU [Q",
         sys.stdout.write('')
         self.printQueue()
         print "]"
@@ -85,7 +92,13 @@ class CPU():
         self.CPUIdle = False
         self.processInCPU = process   # A process AFTER content switching is really treated as a process in the CPU
         process.setInCPUTime(simulator.time)
-        simulator.schedule(simulator.time + burst_time, self.eCPUBurst, process, simulator) 
+        if self.queueType == "RR" :
+            simulator.schedule(simulator.time + burst_time, self.eCPUBurst, process, simulator) 
+            if burst_time > t_slice:
+                simulator.schedule(simulator.time + self.t_slice, self.eRRPreempt, process, simulator) 
+        else:
+            simulator.schedule(simulator.time + burst_time, self.eCPUBurst, process, simulator) 
+
         self.contentSwitchSum += 1
 
     def eCPUBurst(self, process, simulator):
@@ -95,21 +108,26 @@ class CPU():
         process.num_burst -= 1 
         if process.num_burst > 0:
             #time 181ms: P1 completed its CPU burst
-            print "time %dms:" % simulator.time,"P%d"%process.ID, "completed its CPU burst [Q",
+            print "time %dms:" % simulator.time,"Process '%c'"%process.letter, "completed its CPU burst [Q",
             sys.stdout.write('')
             self.printQueue()
             print "]"
             #time 181ms: P1 performing I/O
-            print "time %dms:"% simulator.time,"P%d"%process.ID, "performing I/O [Q",
+            print "time %dms:"% simulator.time,"Process '%c'"%process.letter, "performing I/O [Q",
             sys.stdout.write('')
             self.printQueue()
             print "]"
             simulator.schedule(simulator.time + process.io_time, self.eIOBurst, process, simulator) 
         else:
-            print "time %dms:"% simulator.time,"P%d"%process.ID, "terminated [Q",
+            print "time %dms:"% simulator.time,"Process '%c'"%process.letter, "terminated [Q",
             sys.stdout.write('')
             self.printQueue()
             print "]"
+
+            self.mem.deallocate( process.letter )
+            print "time %dms:"% simulator.time, "Simulated Memory:"
+            self.mem.printmem()
+
             self.turnaroundTimeSum += simulator.time
             self.active_n -= 1
             if(self.active_n == 0):
@@ -129,11 +147,7 @@ class CPU():
         if process.num_burst == 0:
             return
 
-        if process.total_num_burst == process.num_burst:
-            print "Added", process.ID
-
         process.resetRemainBurstTime()
- 
 
         if self.processInCPU and self.queueType=="SRT" and self.processInCPU.remain_burst_time - (simulator.time - self.processInCPU.lastTimeInCPU) > process.burst_time : 
 	# Preempted by SRT
@@ -142,8 +156,7 @@ class CPU():
 	# Preempted by PWA
 	    process.currentAgingSeq = random.getrandbits(128)
 	    self.processInCPU.currentAgingSeq = random.getrandbits(128)
-            print "time %dms:"% simulator.time,"P%d"% process.ID, "completed I/O [Q",
-
+            print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "completed I/O [Q",
             sys.stdout.write('')
             self.printQueue()
             print "]"
@@ -161,18 +174,56 @@ class CPU():
 	        process.currentAgingSeq = random.getrandbits(128)
 	        simulator.schedule(simulator.time + 3 * process.burst_time, self.eAging,process, process.currentAgingSeq , simulator) 
 
-            print "time %dms:"% simulator.time,"P%d"% process.ID, "completed I/O [Q",
-            sys.stdout.write('')
-            self.printQueue()
-            print "]"
- 
+            defragFlag = False
+            if process.total_num_burst == process.num_burst:
+                if not self.mem.allocate( process.memory_size, process.letter ):
+                    defragFlag = True
+                    print "time %dms:"% simulator.time,"Process '%c'" %process.letter, " unable to be added; lack of memory"
+                    print "time %dms:" % simulator.time, "Starting defragmentation (suspending all processes)"
+                    print "time %dms:"% simulator.time, "Simulated Memory:"
+                    self.mem.printmem()
+                    moveunits = self.mem.defragment()
+                    if self.processInCPU:
+	                simulator.delay(self.processInCPU.remain_burst_time + simulator.time, self.processInCPU.ID, moveunits * self.t_memmove)
+                        self.processInCPU.remain_burst_time += moveunits * self.t_memmove
+                    else:
+                        pass
+                        #@TODO block CPU during defragmentation 
+                    simulator.schedule(simulator.time + moveunits * self.t_memmove
+, self.eDefragDone, process, moveunits, simulator) 
+                else:
+                    print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "added to system [Q",
+                    sys.stdout.write('')
+                    self.printQueue()
+                    print "]"
+                    print "time %dms:"% simulator.time, "Simulated Memory:"
+                    self.mem.printmem()
+            else:
+                print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "completed I/O [Q",
+                sys.stdout.write('')
+                self.printQueue()
+                print "]"
+     
         if self.CPUIdle :
         # it means 1.queue empty 2.current process has more rounds 
             next_burst_time, next_process = self.process_queue.nextProcess() 
-
             #Schedule directly
+            #if process.total_num_burst == process.num_burst and defragFlag:
+            #   return
             simulator.schedule(simulator.time + self.t_cs, self.eContentSwitch, next_process, next_burst_time, simulator) 
             self.CPUIdle = False
+
+    def eDefragDone(self, process, moveunits, simulator):
+        print "time %dms:" % simulator.time, "Completed defragmentation (moved %d memory units)" % moveunits
+        print "time %dms:"% simulator.time, "Simulated Memory:"
+        self.mem.printmem()
+        if self.mem.allocate( process.memory_size, process.letter ):
+            print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "added to system [Q",
+            sys.stdout.write('')
+            self.printQueue()
+            print "]"
+            print "time %dms:"% simulator.time, "Simulated Memory:"
+            self.mem.printmem()
 
     def eAging(self, process, agingSeq, simulator):
 	#pdb.set_trace()
@@ -225,6 +276,8 @@ class CPU():
         simulator.schedule(simulator.time + self.t_cs, self.eContentSwitch, next_process, next_burst_time, simulator) 
         self.CPUIdle = False
 
+    def RRPreempt(self, process, simulator): 
+        pass
 
     """
         SRT Preempt
@@ -232,7 +285,7 @@ class CPU():
     def SRTPreempt(self, process, simulator):
 
 
-        print "time %dms:"% simulator.time,"P%d"% process.ID, "completed I/O [Q",
+        print "time %dms:"% simulator.time,"Process '%c'"% process.letter, "completed I/O [Q",
         sys.stdout.write('')
         self.printQueue()
         print "]"
@@ -250,7 +303,7 @@ class CPU():
 #@TODO iant question! how about a process in content switching being preempted???
 
         #PREEMPT CASE OF SRT
-        print "time %dms:"% simulator.time,"P%d"% self.processInCPU.ID, "preempted by P%d [Q" % process.ID ,
+        print "time %dms:"% simulator.time,"Process '%c'"% self.processInCPU.letter, "preempted by Process '%c' [Q" % process.letter,
         sys.stdout.write('')
         self.printQueue()
         print "]"

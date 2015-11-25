@@ -40,7 +40,7 @@ class FCFSQueue(ProcessQueue):
  
     def printQueue(self):
         for ele in self.process_queue:    #ele[0] is the burst time
-            sys.stdout.write(" %d" % ele[1].ID)
+            sys.stdout.write(" %c" % ele[1].letter)
 
 class SRTQueue(ProcessQueue): 
     def __init__(self):
@@ -69,7 +69,7 @@ class SRTQueue(ProcessQueue):
         tmp = []
         while not self.process_queue.empty():
             burst_time, p = self.process_queue.get()
-            sys.stdout.write(" %d" % p.ID)
+            sys.stdout.write(" %c" % p.letter)
             tmp.append((burst_time, p))
         for ele in tmp:
             self.process_queue.put(ele)
@@ -111,6 +111,6 @@ class PWAQueue(ProcessQueue):
         for i in range(6):
             for ele in self.process_queue:    #ele[0] is the burst time
 	        if ele[1].priority == i:
-                    sys.stdout.write(" %d" % ele[1].ID)
+                    sys.stdout.write(" %c" % ele[1].letter)
 
     

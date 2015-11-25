@@ -28,9 +28,10 @@ class ProcessInfo():
     #   self.remain_burst_time = burst_time_val
     #   self.priority = priority_val
 
-    def __init__(self, ID_val, arrival_time, burst_time_val, num_burst_val, io_time_val, memory_size):
+    def __init__(self, ID_val, letter_val, arrival_time, burst_time_val, num_burst_val, io_time_val, memory_size):
        print ID_val, arrival_time, burst_time_val, num_burst_val, io_time_val, memory_size 
        self.ID = ID_val
+       self.letter = letter_val 
        self.arrival_time = arrival_time
        self.burst_time = burst_time_val 
        self.num_burst = num_burst_val 

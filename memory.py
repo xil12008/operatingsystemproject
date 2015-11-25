@@ -7,11 +7,6 @@ import Queue as Q
 import logging
 logging.basicConfig(stream=sys.stderr, level=logging.CRITICAL)
 
-from CPU import CPU
-from processqueue import ProcessQueue 
-from processinfo import ProcessInfo 
-from simulator import Simulator 
-
 class Memory():
     def __init__(self, fitmethod):
         self.cap = 256
@@ -47,7 +42,6 @@ class Memory():
         return False
   
     def __allocate_nextfit(self, size, ID):
-        print "self.head=", self.head
         if self.__allocate_firstfit(size, ID, startlocation = self.head) :
             return True
         else:
@@ -59,17 +53,17 @@ class Memory():
         for i in range(self.cap): 
             if self.mem[i] == '.':
                 if last == -1:
-                    print "new gap", i
                     last = i 
             else:
                 if last != -1 :
-                    print "finish gap", i 
                     if i - last >= size:
                         count[last] = i - last
                 last = -1
         if last != -1: 
             if self.cap - last >= size:
                 count[last] = self.cap - last
+
+        if not count: return False
         minpair = min(count.iteritems(), key=operator.itemgetter(1))
         if minpair[1] >= size:
             self.__allocate_put(minpair[0], size, ID)
@@ -100,5 +94,4 @@ class Memory():
                 self.mem[newi] = tmp 
                 if i != newi: count += 1
                 newi += 1
-        print count, "memory moved"
         return count 
